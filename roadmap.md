@@ -632,12 +632,12 @@ components/
 
 ## Acceptance Criteria
 
-* [ ] Dashboard is accessible after login.
-* [ ] Navigation works.
-* [ ] Dashboard is responsive.
-* [ ] Placeholder statistics are displayed.
-* [ ] Empty states are handled.
-* [ ] Loading states exist where required.
+* [x] Dashboard is accessible after login.
+* [x] Navigation works.
+* [x] Dashboard is responsive.
+* [x] Placeholder statistics are displayed.
+* [x] Empty states are handled.
+* [x] Loading states exist where required.
 
 ---
 
@@ -1533,11 +1533,9 @@ Do not rewrite the entire project to fix a small bug.
 Update this section after completing each phase.
 
 ```text
-PHASE 0 — Project Foundation       [ ]
-PHASE 1 — Authentication            [ ]
 PHASE 0 — Project Foundation       [x]
 PHASE 1 — Authentication            [x]
-PHASE 2 — Dashboard                 [ ]
+PHASE 2 — Dashboard                 [x]
 PHASE 3 — Task Management           [ ]
 PHASE 4 — Productivity Analytics    [ ]
 PHASE 5 — AI Assistant              [ ]

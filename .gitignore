@@ -33,6 +33,7 @@ logs/
 *.sln
 *.sw?
 .DS_Store
+Thumbs.db
 # Credentials & Secrets
 pass.txt
 *.pem

@@ -1,22 +1,58 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { authService } from '../services/authService';
+import StatCard from '../components/StatCard';
+import TaskList from '../components/TaskList';
+import ProductivitySummary from '../components/ProductivitySummary';
 import {
+  ListTodo,
   CheckCircle2,
   Clock,
   AlertTriangle,
-  ListTodo,
+  Calendar,
   Sparkles,
-  Server,
-  GraduationCap,
-  Target,
+  Plus,
+  BookOpen,
+  ArrowRight,
+  Flame,
 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+
+const initialDemoTasks = [
+  {
+    _id: '1',
+    title: 'Review Chapter 4 Algorithms & Data Structures',
+    description: 'Solve practice problems on binary trees and graph traversals.',
+    priority: 'High',
+    status: 'Pending',
+    deadline: new Date(Date.now() + 86400000).toISOString(),
+    category: 'Computer Science',
+  },
+  {
+    _id: '2',
+    title: 'Complete Linear Algebra Assignment 3',
+    description: 'Eigenvalues, eigenvectors, and matrix diagonalization questions.',
+    priority: 'Medium',
+    status: 'Pending',
+    deadline: new Date(Date.now() + 172800000).toISOString(),
+    category: 'Mathematics',
+  },
+  {
+    _id: '3',
+    title: 'Read Operating Systems Research Paper',
+    description: 'Summarize memory management trade-offs for Monday discussion.',
+    priority: 'Low',
+    status: 'Completed',
+    deadline: new Date(Date.now() - 3600000).toISOString(),
+    category: 'Research',
+  },
+];
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [apiStatus, setApiStatus] = useState({ loading: true, online: false, message: '' });
+  const navigate = useNavigate();
+  const [tasks, setTasks] = useState(initialDemoTasks);
 
-  // Get current greeting based on hour
+  // Dynamic greeting based on current time
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -24,174 +60,188 @@ const Dashboard = () => {
     return 'Good evening';
   };
 
-  useEffect(() => {
-    const checkBackend = async () => {
-      try {
-        const data = await authService.checkHealth();
-        setApiStatus({
-          loading: false,
-          online: true,
-          message: data.message || 'API is online',
-        });
-      } catch (err) {
-        setApiStatus({
-          loading: false,
-          online: false,
-          message: 'Backend disconnected / unreachable',
-        });
-      }
-    };
+  // Toggle task completed state locally in dashboard
+  const handleToggleStatus = (clickedTask) => {
+    setTasks((prev) =>
+      prev.map((t) =>
+        t._id === clickedTask._id
+          ? {
+              ...t,
+              status: t.status === 'Completed' ? 'Pending' : 'Completed',
+            }
+          : t
+      )
+    );
+  };
 
-    checkBackend();
-  }, []);
+  // Calculate real-time stats
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter((t) => t.status === 'Completed').length;
+  const pendingTasks = tasks.filter((t) => t.status !== 'Completed').length;
+  const overdueTasks = tasks.filter(
+    (t) =>
+      t.deadline &&
+      new Date(t.deadline) < new Date() &&
+      t.status !== 'Completed'
+  ).length;
+
+  // Upcoming deadlines (next 3 pending tasks sorted by date)
+  const upcomingDeadlines = tasks
+    .filter((t) => t.status !== 'Completed' && t.deadline)
+    .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+    .slice(0, 3);
 
   return (
     <div className="space-y-6">
-      {/* Top Banner & Greeting */}
-      <div className="rounded-2xl bg-gradient-to-r from-indigo-700 via-indigo-600 to-violet-600 p-6 sm:p-8 text-white shadow-lg shadow-indigo-200">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* 1. Hero Student Greeting Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-700 via-indigo-600 to-violet-700 p-6 sm:p-8 text-white shadow-lg shadow-indigo-900/10">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-medium backdrop-blur-md">
-              <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-              Phase 0 & 1 Operational
-            </span>
-            <h1 className="mt-2 text-2xl sm:text-3xl font-bold tracking-tight">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur-md">
+                <Flame className="h-3.5 w-3.5 text-amber-300" />
+                3-Day Study Streak
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/30 px-3 py-1 text-xs font-medium backdrop-blur-md border border-white/10">
+                {user?.profile?.college || 'Computer Science'}
+              </span>
+            </div>
+
+            <h1 className="mt-3 text-2xl sm:text-3xl font-extrabold tracking-tight">
               {getGreeting()}, {user?.name?.split(' ')[0] || 'Student'}!
             </h1>
-            <p className="mt-1 text-indigo-100 text-sm max-w-xl">
-              Welcome to your StudyZen workspace. Track your academic milestones, manage deadlines, and prepare with AI.
+
+            <p className="mt-1.5 text-indigo-100 text-xs sm:text-sm max-w-xl leading-relaxed">
+              You have <span className="font-bold text-white">{pendingTasks} pending tasks</span> on your study schedule today. Keep up the momentum!
             </p>
           </div>
 
-          {/* System Status Pill */}
-          <div className="flex items-center gap-2 rounded-xl bg-white/10 px-3.5 py-2 text-xs font-medium backdrop-blur-md border border-white/10">
-            <Server className="h-4 w-4 text-indigo-200" />
-            <span className="text-indigo-100">API Status:</span>
-            {apiStatus.loading ? (
-              <span className="text-amber-200">Checking...</span>
-            ) : apiStatus.online ? (
-              <span className="inline-flex items-center gap-1 text-emerald-300 font-semibold">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                Connected
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-rose-300 font-semibold">
-                <span className="h-2 w-2 rounded-full bg-rose-400"></span>
-                Offline
-              </span>
-            )}
+          {/* Quick CTA button */}
+          <div className="flex items-center gap-3">
+            <Link
+              to="/tasks"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-indigo-700 shadow-sm hover:bg-indigo-50 transition cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Create Task</span>
+            </Link>
+            <Link
+              to="/ai"
+              className="inline-flex items-center gap-2 rounded-xl bg-white/10 border border-white/20 px-4 py-2.5 text-xs font-semibold text-white backdrop-blur-md hover:bg-white/20 transition cursor-pointer"
+            >
+              <Sparkles className="h-4 w-4 text-amber-300" />
+              <span>Ask AI</span>
+            </Link>
           </div>
         </div>
+
+        {/* Ambient background decoration */}
+        <div className="absolute -right-8 -bottom-8 h-48 w-48 rounded-full bg-white/10 blur-2xl pointer-events-none" />
       </div>
 
-      {/* Student Profile & Quick Info */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-              <GraduationCap className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Institution</p>
-              <p className="text-sm font-semibold text-slate-800">
-                {user?.profile?.college || 'Not specified'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <Target className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Academic Goal</p>
-              <p className="text-sm font-semibold text-slate-800">
-                {user?.profile?.academicGoal || 'Consistent Progress'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Study Method</p>
-              <p className="text-sm font-semibold text-slate-800">
-                {user?.profile?.studyPreference || 'Pomodoro'}
-              </p>
-            </div>
-          </div>
-        </div>
+      {/* 2. 4-Grid Statistics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <StatCard
+          title="Total Tasks"
+          value={totalTasks}
+          icon={ListTodo}
+          color="indigo"
+          subtext="Active in your semester"
+          badge="Semester"
+        />
+        <StatCard
+          title="Completed"
+          value={completedTasks}
+          icon={CheckCircle2}
+          color="emerald"
+          subtext={`${totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}% completion`}
+          badge="On track"
+        />
+        <StatCard
+          title="Pending"
+          value={pendingTasks}
+          icon={Clock}
+          color="amber"
+          subtext="Requires your attention"
+          badge="Action needed"
+        />
+        <StatCard
+          title="Overdue"
+          value={overdueTasks}
+          icon={AlertTriangle}
+          color="rose"
+          subtext={overdueTasks === 0 ? 'All caught up' : 'Needs urgent review'}
+          badge={overdueTasks === 0 ? 'Clean' : 'Urgent'}
+        />
       </div>
 
-      {/* Placeholder Overview Cards for Phase 2 / Phase 3 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">Total Tasks</span>
-            <ListTodo className="h-4 w-4 text-slate-400" />
-          </div>
-          <p className="mt-2 text-2xl font-bold text-slate-800">0</p>
-          <span className="text-[11px] text-slate-400">Ready for Phase 3 (Tasks)</span>
+      {/* 3. Main Split View: Left (Today's Tasks) & Right (Deadlines + Summary) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column (2 Cols wide on desktop): Tasks List */}
+        <div className="lg:col-span-2 space-y-6">
+          <TaskList
+            tasks={tasks}
+            onToggleStatus={handleToggleStatus}
+            onAddTask={() => navigate('/tasks')}
+          />
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">Completed</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          </div>
-          <p className="mt-2 text-2xl font-bold text-emerald-600">0</p>
-          <span className="text-[11px] text-emerald-600/70">100% completion goal</span>
-        </div>
+        {/* Right Column (1 Col wide on desktop): Upcoming Deadlines & Productivity */}
+        <div className="space-y-6">
+          {/* Upcoming Deadlines Card */}
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  Upcoming Deadlines
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Tasks due in the next few days
+                </p>
+              </div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
+                <Calendar className="h-5 w-5" />
+              </div>
+            </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">Pending</span>
-            <Clock className="h-4 w-4 text-amber-500" />
+            <div className="mt-4 space-y-3">
+              {upcomingDeadlines.length > 0 ? (
+                upcomingDeadlines.map((task) => (
+                  <div
+                    key={task._id}
+                    className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3 text-xs"
+                  >
+                    <div className="min-w-0 flex-1 pr-3">
+                      <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                        {task.title}
+                      </p>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {task.category}
+                      </span>
+                    </div>
+                    <span className="shrink-0 rounded-lg bg-white dark:bg-slate-700 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                      {new Date(task.deadline).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="py-4 text-center text-xs text-slate-400 dark:text-slate-500">
+                  No upcoming deadlines!
+                </p>
+              )}
+            </div>
           </div>
-          <p className="mt-2 text-2xl font-bold text-amber-600">0</p>
-          <span className="text-[11px] text-amber-600/70">Up to date</span>
-        </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500">Overdue</span>
-            <AlertTriangle className="h-4 w-4 text-rose-500" />
-          </div>
-          <p className="mt-2 text-2xl font-bold text-rose-600">0</p>
-          <span className="text-[11px] text-slate-400">No overdue deadlines</span>
-        </div>
-      </div>
-
-      {/* Next Phases Roadmap Callout */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="text-base font-semibold text-slate-900">Current Phase Status</h3>
-        <p className="mt-1 text-sm text-slate-500">
-          Phase 0 (Project Foundation) and Phase 1 (JWT Authentication) have been scaffolded and connected.
-        </p>
-
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
-            <span className="font-semibold text-emerald-800">✓ Phase 0: Foundation</span>
-            <p className="mt-0.5 text-emerald-700">Express + Vite + DB connection</p>
-          </div>
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
-            <span className="font-semibold text-emerald-800">✓ Phase 1: Authentication</span>
-            <p className="mt-0.5 text-emerald-700">JWT, Bcrypt, Protected routes</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-slate-600">
-            <span className="font-semibold text-slate-700">Phase 2: Dashboard UI</span>
-            <p className="mt-0.5 text-slate-500">Comprehensive layout & cards</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-slate-600">
-            <span className="font-semibold text-slate-700">Phase 3: Task Management</span>
-            <p className="mt-0.5 text-slate-500">CRUD, filters, priority, search</p>
-          </div>
+          {/* Productivity Summary Card */}
+          <ProductivitySummary
+            total={totalTasks}
+            completed={completedTasks}
+            pending={pendingTasks}
+            overdue={overdueTasks}
+          />
         </div>
       </div>
     </div>
@@ -199,4 +249,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
