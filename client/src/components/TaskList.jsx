@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import TaskCard from './TaskCard';
 import EmptyState from './EmptyState';
-import { ArrowRight, ListTodo } from 'lucide-react';
+import { ArrowRight, ListTodo, Plus } from 'lucide-react';
 
-const TaskList = ({ tasks = [], onToggleStatus, onAddTask }) => {
+const TaskList = ({ tasks = [], onToggleStatus, onEdit, onDelete, onAddTask }) => {
   const [filter, setFilter] = useState('All');
 
   const filteredTasks = tasks.filter((task) => {
@@ -15,7 +15,7 @@ const TaskList = ({ tasks = [], onToggleStatus, onAddTask }) => {
 
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-xs">
-      {/* Header with Filters */}
+      {/* Header with Filters & Quick Add */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
         <div>
           <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
@@ -26,22 +26,35 @@ const TaskList = ({ tasks = [], onToggleStatus, onAddTask }) => {
           </p>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 p-1 text-xs">
-          {['All', 'Pending', 'Completed'].map((tab) => (
+        <div className="flex items-center gap-2">
+          {/* Filter Pills */}
+          <div className="flex items-center gap-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 p-1 text-xs">
+            {['All', 'Pending', 'Completed'].map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setFilter(tab)}
+                className={`rounded-lg px-3 py-1 font-medium transition cursor-pointer ${
+                  filter === tab
+                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {onAddTask && (
             <button
-              key={tab}
               type="button"
-              onClick={() => setFilter(tab)}
-              className={`rounded-lg px-3 py-1 font-medium transition cursor-pointer ${
-                filter === tab
-                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
+              onClick={onAddTask}
+              className="inline-flex items-center gap-1 rounded-xl bg-indigo-600 dark:bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700 transition cursor-pointer"
             >
-              {tab}
+              <Plus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Add</span>
             </button>
-          ))}
+          )}
         </div>
       </div>
 
@@ -53,6 +66,8 @@ const TaskList = ({ tasks = [], onToggleStatus, onAddTask }) => {
               key={task._id || task.id}
               task={task}
               onToggleStatus={onToggleStatus}
+              onEdit={onEdit}
+              onDelete={onDelete}
             />
           ))
         ) : (
@@ -60,7 +75,7 @@ const TaskList = ({ tasks = [], onToggleStatus, onAddTask }) => {
             icon={ListTodo}
             title={filter === 'All' ? 'No tasks yet' : `No ${filter.toLowerCase()} tasks`}
             description="Organize your syllabus, assignments, and test preparation."
-            actionText="Go to Tasks"
+            actionText="Create New Task"
             onAction={onAddTask}
           />
         )}
@@ -72,7 +87,7 @@ const TaskList = ({ tasks = [], onToggleStatus, onAddTask }) => {
           to="/tasks"
           className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition"
         >
-          <span>View all tasks in Phase 3</span>
+          <span>View all task filters & search</span>
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>

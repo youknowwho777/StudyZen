@@ -6,6 +6,7 @@ const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 // Route imports
 const healthRoutes = require('./routes/healthRoutes');
 const authRoutes = require('./routes/authRoutes');
+const taskRoutes = require('./routes/taskRoutes');
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 // API Routes
 app.use('/api', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // Root route
 app.get('/', (req, res) => {

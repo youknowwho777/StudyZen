@@ -74,3 +74,4 @@ const ProductivitySummary = ({
 };
 
 export default ProductivitySummary;
+

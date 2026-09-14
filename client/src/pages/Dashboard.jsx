@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { taskService } from '../services/taskService';
 import StatCard from '../components/StatCard';
 import TaskList from '../components/TaskList';
+import TaskModal from '../components/TaskModal';
 import ProductivitySummary from '../components/ProductivitySummary';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorMessage from '../components/ErrorMessage';
 import {
   ListTodo,
   CheckCircle2,
@@ -11,46 +15,24 @@ import {
   Calendar,
   Sparkles,
   Plus,
-  BookOpen,
   ArrowRight,
   Flame,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
-const initialDemoTasks = [
-  {
-    _id: '1',
-    title: 'Review Chapter 4 Algorithms & Data Structures',
-    description: 'Solve practice problems on binary trees and graph traversals.',
-    priority: 'High',
-    status: 'Pending',
-    deadline: new Date(Date.now() + 86400000).toISOString(),
-    category: 'Computer Science',
-  },
-  {
-    _id: '2',
-    title: 'Complete Linear Algebra Assignment 3',
-    description: 'Eigenvalues, eigenvectors, and matrix diagonalization questions.',
-    priority: 'Medium',
-    status: 'Pending',
-    deadline: new Date(Date.now() + 172800000).toISOString(),
-    category: 'Mathematics',
-  },
-  {
-    _id: '3',
-    title: 'Read Operating Systems Research Paper',
-    description: 'Summarize memory management trade-offs for Monday discussion.',
-    priority: 'Low',
-    status: 'Completed',
-    deadline: new Date(Date.now() - 3600000).toISOString(),
-    category: 'Research',
-  },
-];
-
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState(initialDemoTasks);
+
+  const [tasks, setTasks] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Dynamic greeting based on current time
   const getGreeting = () => {
@@ -60,30 +42,113 @@ const Dashboard = () => {
     return 'Good evening';
   };
 
-  // Toggle task completed state locally in dashboard
-  const handleToggleStatus = (clickedTask) => {
+  // Fetch real data from backend
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      // Fetch tasks and stats in parallel
+      const [tasksRes, statsRes] = await Promise.allSettled([
+        taskService.getTasks(),
+        taskService.getTaskStats(),
+      ]);
+
+      if (tasksRes.status === 'fulfilled' && tasksRes.value?.success) {
+        setTasks(tasksRes.value.tasks || []);
+      }
+
+      if (statsRes.status === 'fulfilled' && statsRes.value?.success) {
+        setStats(statsRes.value.stats);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  // Toggle task completed state
+  const handleToggleStatus = async (clickedTask) => {
+    const newStatus = clickedTask.status === 'Completed' ? 'Pending' : 'Completed';
+    // Optimistic UI update
     setTasks((prev) =>
       prev.map((t) =>
-        t._id === clickedTask._id
-          ? {
-              ...t,
-              status: t.status === 'Completed' ? 'Pending' : 'Completed',
-            }
+        (t._id || t.id) === (clickedTask._id || clickedTask.id)
+          ? { ...t, status: newStatus }
           : t
       )
     );
+
+    try {
+      await taskService.updateTask(clickedTask._id || clickedTask.id, { status: newStatus });
+      // Refresh stats
+      const statsRes = await taskService.getTaskStats();
+      if (statsRes.success) setStats(statsRes.stats);
+    } catch (err) {
+      fetchDashboardData();
+    }
   };
 
-  // Calculate real-time stats
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter((t) => t.status === 'Completed').length;
-  const pendingTasks = tasks.filter((t) => t.status !== 'Completed').length;
-  const overdueTasks = tasks.filter(
-    (t) =>
-      t.deadline &&
-      new Date(t.deadline) < new Date() &&
-      t.status !== 'Completed'
-  ).length;
+  // Create or Update task from modal
+  const handleSaveTask = async (taskFormData) => {
+    try {
+      setIsSubmitting(true);
+      if (editingTask) {
+        await taskService.updateTask(editingTask._id || editingTask.id, taskFormData);
+      } else {
+        await taskService.createTask(taskFormData);
+      }
+      setIsModalOpen(false);
+      setEditingTask(null);
+      await fetchDashboardData();
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to save task');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Delete task
+  const handleDeleteTask = async (taskId) => {
+    if (!window.confirm('Delete this task?')) return;
+    try {
+      await taskService.deleteTask(taskId);
+      setTasks((prev) => prev.filter((t) => (t._id || t.id) !== taskId));
+      const statsRes = await taskService.getTaskStats();
+      if (statsRes.success) setStats(statsRes.stats);
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to delete task');
+    }
+  };
+
+  // Compute live metrics from real stats or local fallback
+  const totalTasks = stats ? stats.totalTasks : tasks.length;
+  const completedTasks = stats
+    ? stats.completedTasks
+    : tasks.filter((t) => t.status === 'Completed').length;
+  const pendingTasks = stats
+    ? stats.pendingTasks + (stats.inProgressTasks || 0)
+    : tasks.filter((t) => t.status !== 'Completed').length;
+  const overdueTasks = stats
+    ? stats.overdueTasks
+    : tasks.filter(
+        (t) =>
+          t.deadline &&
+          new Date(t.deadline) < new Date() &&
+          t.status !== 'Completed'
+      ).length;
+
+  const completionRate =
+    stats?.completionRate !== undefined
+      ? stats.completionRate
+      : totalTasks > 0
+      ? Math.round((completedTasks / totalTasks) * 100)
+      : 0;
 
   // Upcoming deadlines (next 3 pending tasks sorted by date)
   const upcomingDeadlines = tasks
@@ -100,10 +165,10 @@ const Dashboard = () => {
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur-md">
                 <Flame className="h-3.5 w-3.5 text-amber-300" />
-                3-Day Study Streak
+                Active Study Session
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/30 px-3 py-1 text-xs font-medium backdrop-blur-md border border-white/10">
-                {user?.profile?.college || 'Computer Science'}
+                {user?.profile?.college || 'Student Workspace'}
               </span>
             </div>
 
@@ -112,58 +177,64 @@ const Dashboard = () => {
             </h1>
 
             <p className="mt-1.5 text-indigo-100 text-xs sm:text-sm max-w-xl leading-relaxed">
-              You have <span className="font-bold text-white">{pendingTasks} pending tasks</span> on your study schedule today. Keep up the momentum!
+              You have <span className="font-bold text-white">{pendingTasks} pending tasks</span> on your schedule. Track deadlines, study priorities, and academic metrics in real-time.
             </p>
           </div>
 
-          {/* Quick CTA button */}
+          {/* Quick CTA buttons */}
           <div className="flex items-center gap-3">
-            <Link
-              to="/tasks"
+            <button
+              type="button"
+              onClick={() => {
+                setEditingTask(null);
+                setIsModalOpen(true);
+              }}
               className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-indigo-700 shadow-sm hover:bg-indigo-50 transition cursor-pointer"
             >
               <Plus className="h-4 w-4" />
-              <span>Create Task</span>
-            </Link>
+              <span>Add Task</span>
+            </button>
             <Link
-              to="/ai"
+              to="/analytics"
               className="inline-flex items-center gap-2 rounded-xl bg-white/10 border border-white/20 px-4 py-2.5 text-xs font-semibold text-white backdrop-blur-md hover:bg-white/20 transition cursor-pointer"
             >
               <Sparkles className="h-4 w-4 text-amber-300" />
-              <span>Ask AI</span>
+              <span>View Analytics</span>
             </Link>
           </div>
         </div>
 
-        {/* Ambient background decoration */}
+        {/* Ambient glow decoration */}
         <div className="absolute -right-8 -bottom-8 h-48 w-48 rounded-full bg-white/10 blur-2xl pointer-events-none" />
       </div>
 
-      {/* 2. 4-Grid Statistics Cards */}
+      {error && <ErrorMessage message={error} onRetry={fetchDashboardData} />}
+
+      {/* 2. 4-Grid Statistics Cards with Real MongoDB Data */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         <StatCard
           title="Total Tasks"
           value={totalTasks}
           icon={ListTodo}
           color="indigo"
-          subtext="Active in your semester"
-          badge="Semester"
+          subtext="Total coursework items"
+          badge="Live DB"
         />
         <StatCard
           title="Completed"
           value={completedTasks}
           icon={CheckCircle2}
           color="emerald"
-          subtext={`${totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}% completion`}
-          badge="On track"
+          subtext={`${completionRate}% completion rate`}
+          badge="Progress"
         />
         <StatCard
           title="Pending"
           value={pendingTasks}
           icon={Clock}
           color="amber"
-          subtext="Requires your attention"
-          badge="Action needed"
+          subtext="Requires attention"
+          badge="Actionable"
         />
         <StatCard
           title="Overdue"
@@ -171,22 +242,36 @@ const Dashboard = () => {
           icon={AlertTriangle}
           color="rose"
           subtext={overdueTasks === 0 ? 'All caught up' : 'Needs urgent review'}
-          badge={overdueTasks === 0 ? 'Clean' : 'Urgent'}
+          badge={overdueTasks === 0 ? 'Clean' : 'Overdue'}
         />
       </div>
 
       {/* 3. Main Split View: Left (Today's Tasks) & Right (Deadlines + Summary) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column (2 Cols wide on desktop): Tasks List */}
+        {/* Left Column: Tasks List */}
         <div className="lg:col-span-2 space-y-6">
-          <TaskList
-            tasks={tasks}
-            onToggleStatus={handleToggleStatus}
-            onAddTask={() => navigate('/tasks')}
-          />
+          {loading ? (
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8">
+              <LoadingSpinner size="md" message="Loading your tasks from MongoDB..." />
+            </div>
+          ) : (
+            <TaskList
+              tasks={tasks}
+              onToggleStatus={handleToggleStatus}
+              onEdit={(task) => {
+                setEditingTask(task);
+                setIsModalOpen(true);
+              }}
+              onDelete={handleDeleteTask}
+              onAddTask={() => {
+                setEditingTask(null);
+                setIsModalOpen(true);
+              }}
+            />
+          )}
         </div>
 
-        {/* Right Column (1 Col wide on desktop): Upcoming Deadlines & Productivity */}
+        {/* Right Column: Upcoming Deadlines & Productivity */}
         <div className="space-y-6">
           {/* Upcoming Deadlines Card */}
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-xs">
@@ -208,7 +293,7 @@ const Dashboard = () => {
               {upcomingDeadlines.length > 0 ? (
                 upcomingDeadlines.map((task) => (
                   <div
-                    key={task._id}
+                    key={task._id || task.id}
                     className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3 text-xs"
                   >
                     <div className="min-w-0 flex-1 pr-3">
@@ -216,7 +301,7 @@ const Dashboard = () => {
                         {task.title}
                       </p>
                       <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                        {task.category}
+                        {task.category || 'General'}
                       </span>
                     </div>
                     <span className="shrink-0 rounded-lg bg-white dark:bg-slate-700 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
@@ -229,7 +314,7 @@ const Dashboard = () => {
                 ))
               ) : (
                 <p className="py-4 text-center text-xs text-slate-400 dark:text-slate-500">
-                  No upcoming deadlines!
+                  No upcoming deadlines scheduled!
                 </p>
               )}
             </div>
@@ -244,6 +329,18 @@ const Dashboard = () => {
           />
         </div>
       </div>
+
+      {/* Task Creation / Edit Modal */}
+      <TaskModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingTask(null);
+        }}
+        onSave={handleSaveTask}
+        task={editingTask}
+        isLoading={isSubmitting}
+      />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Tag, AlertCircle, CheckCircle2, Circle } from 'lucide-react';
+import { Calendar, Tag, AlertCircle, CheckCircle2, Circle, Edit2, Trash2 } from 'lucide-react';
 
 const priorityConfig = {
   High: {
@@ -16,7 +16,7 @@ const priorityConfig = {
   },
 };
 
-const TaskCard = ({ task, onToggleStatus }) => {
+const TaskCard = ({ task, onToggleStatus, onEdit, onDelete }) => {
   const isCompleted = task.status === 'Completed';
   const priority = priorityConfig[task.priority] || priorityConfig.Medium;
 
@@ -104,13 +104,39 @@ const TaskCard = ({ task, onToggleStatus }) => {
         </div>
       </div>
 
-      {/* Right Column: Priority Badge */}
-      <span
-        className={`shrink-0 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${priority.badge}`}
-      >
-        <span className={`h-1.5 w-1.5 rounded-full ${priority.indicator}`} />
-        {task.priority || 'Medium'}
-      </span>
+      {/* Right Column: Priority Badge & Action Buttons */}
+      <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+        <span
+          className={`shrink-0 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${priority.badge}`}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${priority.indicator}`} />
+          {task.priority || 'Medium'}
+        </span>
+
+        {/* Action icons (Edit & Delete) */}
+        <div className="flex items-center gap-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(task)}
+              className="rounded-lg p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              title="Edit Task"
+            >
+              <Edit2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(task._id || task.id)}
+              className="rounded-lg p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              title="Delete Task"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

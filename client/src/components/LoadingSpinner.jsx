@@ -23,3 +23,4 @@ const LoadingSpinner = ({ size = 'md', message = 'Loading...' }) => {
 };
 
 export default LoadingSpinner;
+
