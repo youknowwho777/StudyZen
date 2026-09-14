@@ -30,7 +30,11 @@ const Login = () => {
       await login(email, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to login');
+      if (!err.response) {
+        setError('Cannot connect to backend server. Please make sure the backend is running on port 5000 (run "npm run dev" inside the server directory).');
+      } else {
+        setError(err.response.data?.message || err.message || 'Failed to login');
+      }
     } finally {
       setLoading(false);
     }
