@@ -261,11 +261,10 @@ const Tasks = () => {
               key={tab}
               type="button"
               onClick={() => setSelectedFilter(tab)}
-              className={`rounded-xl px-3 py-1.5 text-xs font-medium transition cursor-pointer ${
-                selectedFilter === tab
+              className={`rounded-xl px-3 py-1.5 text-xs font-medium transition cursor-pointer ${selectedFilter === tab
                   ? 'bg-indigo-600 text-white shadow-xs dark:bg-indigo-500'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-              }`}
+                }`}
             >
               {tab}
             </button>

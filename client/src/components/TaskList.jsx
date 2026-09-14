@@ -34,11 +34,10 @@ const TaskList = ({ tasks = [], onToggleStatus, onEdit, onDelete, onAddTask }) =
                 key={tab}
                 type="button"
                 onClick={() => setFilter(tab)}
-                className={`rounded-lg px-3 py-1 font-medium transition cursor-pointer ${
-                  filter === tab
+                className={`rounded-lg px-3 py-1 font-medium transition cursor-pointer ${filter === tab
                     ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
+                  }`}
               >
                 {tab}
               </button>

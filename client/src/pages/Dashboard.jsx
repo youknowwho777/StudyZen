@@ -137,18 +137,18 @@ const Dashboard = () => {
   const overdueTasks = stats
     ? stats.overdueTasks
     : tasks.filter(
-        (t) =>
-          t.deadline &&
-          new Date(t.deadline) < new Date() &&
-          t.status !== 'Completed'
-      ).length;
+      (t) =>
+        t.deadline &&
+        new Date(t.deadline) < new Date() &&
+        t.status !== 'Completed'
+    ).length;
 
   const completionRate =
     stats?.completionRate !== undefined
       ? stats.completionRate
       : totalTasks > 0
-      ? Math.round((completedTasks / totalTasks) * 100)
-      : 0;
+        ? Math.round((completedTasks / totalTasks) * 100)
+        : 0;
 
   // Upcoming deadlines (next 3 pending tasks sorted by date)
   const upcomingDeadlines = tasks

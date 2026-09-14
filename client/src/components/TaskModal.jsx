@@ -197,3 +197,4 @@ const TaskModal = ({ isOpen, onClose, onSave, task = null, isLoading = false }) 
 };
 
 export default TaskModal;
+

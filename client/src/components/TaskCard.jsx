@@ -36,11 +36,10 @@ const TaskCard = ({ task, onToggleStatus, onEdit, onDelete }) => {
 
   return (
     <div
-      className={`group relative flex items-start justify-between gap-3.5 rounded-xl border p-4 transition-all duration-200 ${
-        isCompleted
+      className={`group relative flex items-start justify-between gap-3.5 rounded-xl border p-4 transition-all duration-200 ${isCompleted
           ? 'border-slate-200/70 bg-slate-50/60 dark:border-slate-800/60 dark:bg-slate-900/40 opacity-75'
           : 'border-slate-200 bg-white hover:border-indigo-200 hover:shadow-xs dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-900'
-      }`}
+        }`}
     >
       {/* Left Column: Checkbox & Info */}
       <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -59,11 +58,10 @@ const TaskCard = ({ task, onToggleStatus, onEdit, onDelete }) => {
 
         <div className="flex-1 min-w-0">
           <h4
-            className={`text-sm font-semibold truncate ${
-              isCompleted
+            className={`text-sm font-semibold truncate ${isCompleted
                 ? 'line-through text-slate-400 dark:text-slate-500'
                 : 'text-slate-900 dark:text-slate-100'
-            }`}
+              }`}
           >
             {task.title}
           </h4>
@@ -85,11 +83,10 @@ const TaskCard = ({ task, onToggleStatus, onEdit, onDelete }) => {
 
             {formattedDate && (
               <span
-                className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-medium ${
-                  isOverdue
+                className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-medium ${isOverdue
                     ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
                     : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-                }`}
+                  }`}
               >
                 {isOverdue ? (
                   <AlertCircle className="h-3 w-3 text-rose-500" />
