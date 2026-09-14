@@ -2,16 +2,22 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/studyzen');
-    console.log(`[Database] MongoDB Connected: ${conn.connection.host}`);
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 8000,
+    });
+    console.log(`[Database] MongoDB Connected: ${conn.connection.host} (Database: ${conn.connection.name})`);
   } catch (error) {
     console.error(`[Database Error] ${error.message}`);
-    // In development, log the error but don't crash if MongoDB is not running yet
-    if (process.env.NODE_ENV === 'production') {
-      process.exit(1);
-    }
+    console.error(`[Database Hint] Ensure your IP is whitelisted in MongoDB Atlas (Network Access > Allow Access From Anywhere: 0.0.0.0/0).`);
   }
 };
 
-module.exports = connectDB;
+mongoose.connection.on('disconnected', () => {
+  console.warn('[Database] MongoDB disconnected.');
+});
 
+mongoose.connection.on('reconnected', () => {
+  console.log('[Database] MongoDB reconnected.');
+});
+
+module.exports = connectDB;

@@ -31,6 +31,12 @@ const errorHandler = (err, req, res, next) => {
     message = 'Resource not found';
   }
 
+  // Handle Mongoose buffering timeout (Database not connected)
+  if (err.message && err.message.includes('buffering timed out')) {
+    statusCode = 503;
+    message = 'Database connection timed out. Please restart the backend server or verify MongoDB Atlas network access.';
+  }
+
   res.status(statusCode).json({
     success: false,
     message,
