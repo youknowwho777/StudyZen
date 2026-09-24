@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const morgan = require('morgan');
+const morgan = require('morgan'); //logs HTTP request
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 // Route imports
@@ -32,7 +32,7 @@ app.use(
         callback(new Error('Blocked by CORS'));
       }
     },
-    credentials: true,
+    credentials: true, //revisit during authentication
   })
 );
 
@@ -45,7 +45,7 @@ app.use('/api', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 
-// Root route
+// Root route --> simple information page for details about application
 app.get('/', (req, res) => {
   res.json({
     name: 'StudyZen API',

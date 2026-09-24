@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+//use mpngoose Schema options well (required,unique,trim,....)
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -48,7 +49,7 @@ const userSchema = new mongoose.Schema({
 
 // Pre-save hook: Hash password before saving if modified
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
+  if (!this.isModified('password')) { //prevent hashing already hashed password
     return next();
   }
   const salt = await bcrypt.genSalt(10);

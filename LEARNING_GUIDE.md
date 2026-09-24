@@ -113,3 +113,4 @@ Step 6: Data Aggregation & Productivity Analytics (Phase 4)
 * What does the JWT payload contain and why don't we store passwords in it? *(See `generateToken.js`)*
 * Why is it critical to check `task.user.toString() === req.user._id.toString()` on delete? *(See `taskController.js`)*
 * How does `localStorage` keep the student logged in after closing the browser? *(See `AuthContext.jsx`)*
+

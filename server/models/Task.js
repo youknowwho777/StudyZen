@@ -4,7 +4,7 @@ const taskSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'User',  //tells the objectId in this refers to User Model
       required: true,
       index: true,
     },

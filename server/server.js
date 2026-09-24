@@ -16,7 +16,7 @@ const server = app.listen(PORT, () => {
   console.log(`[Server] StudyZen API running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });
 
-// Handle unhandled promise rejections
+//Handle unhandled promise rejections (Process-level Error Handling)
 process.on('unhandledRejection', (err) => {
   console.error(`[Server Error] Unhandled Rejection: ${err.message}`);
 });
